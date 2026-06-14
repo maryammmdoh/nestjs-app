@@ -38,8 +38,6 @@ A RESTful API built with **NestJS**, **MongoDB**, and **Mongoose** — featuring
 
 ---
 
----
-
 ## ⚙️ Setup
 
 ### 1. Install dependencies
