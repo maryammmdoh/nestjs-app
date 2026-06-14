@@ -25,6 +25,12 @@
 
 A RESTful API built with **NestJS**, **MongoDB**, and **Mongoose** — featuring user authentication and management.
 
+## 📬 API Documentation
+
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://documenter.getpostman.com/view/47293612/2sBXwsNAwC)
+
+🔗 [View Full API Docs on Postman](https://documenter.getpostman.com/view/47293612/2sBXwsNAwC)
+
 ---
 
 ## 🛠️ Tech Stack
