@@ -1,6 +1,10 @@
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 import { GenderEnum, ProviderEnum, RoleEnum } from '../common/Enum/user.enums';
+import { SecurityService } from '../common/module/security/security.service';
+import { SecurityModule } from '../common/module/security/security.module';
+import { EmailEnum } from 'src/common/Enum/email.enums';
+import { EmailService } from './../common/service/email.service';
 
 export interface IUser {
   userName: string;
@@ -72,56 +76,65 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.pre('save', async function (this: IHUser & { wasNew: boolean }) {
-  //   if (this.isModified("password")) {
-  //     const hashedPassword = await hashOperation({
-  //       plainValue: this.password,
-  //       rounds: SALT_ROUNDS,
-  //     });
-  //     this.password = hashedPassword;
-  //   }
-  //   if (this.phone && this.isModified("phone")) {
-  //     const phoneEncrypted = encryptvalue({ value: this.phone });
-  //     this.phone = phoneEncrypted;
-  //   }
-  //   console.log("Pre-save hook executed for user:", this);
-});
+// const UserModel = MongooseModule.forFeature([
+//   { name: User.name, schema: UserSchema },
+// ];
 
-UserSchema.post('save', async function (this: IHUser & { wasNew: boolean }) {
-  //   try {
-  //     if (this.wasNew) {
-  //       await MailService.SendEmailOTP({
-  //         email: this.email,
-  //         emailType: EmailEnum.CONFIRM_EMAIL,
-  //         subject: "Please confirm your email",
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error("Error sending email OTP:", error);
-  //   }
-  //   console.log("Post-save hook executed for user:", this);
-});
+const UserModel = MongooseModule.forFeatureAsync([
+  {
+    name: User.name,
+    useFactory: (securityService: SecurityService) => {
+      UserSchema.pre(
+        'save',
+        async function (this: IHUser & { wasNew: boolean }) {
+          if (this.isModified('password')) {
+            const hashedPassword = await securityService.hashOperation({
+              plainValue: this.password,
+              // rounds: securityService.SALT_ROUNDS,
+            });
+            this.password = hashedPassword;
+          }
+          if (this.phone && this.isModified('phone')) {
+            const phoneEncrypted = securityService.encryptvalue({
+              value: this.phone,
+            });
+            this.phone = phoneEncrypted;
+          }
+          console.log('Pre-save hook executed for user:', this);
+        },
+      );
 
-UserSchema.pre(['findOne', 'find'], function () {
-  console.log('Pre-findOne hook executed with filter:', this.getFilter());
-  const query = this.getQuery();
+      // UserSchema.post(
+      //   'save',
+      //   async function (this: IHUser & { wasNew: boolean }) {
+      //     try {
+      //       if (this.wasNew) {
+      //         await emailService.sendEmailOTP({
+      //           email: this.email,
+      //           emailType: EmailEnum.CONFIRM_EMAIL,
+      //           subject: 'Confirm your email',
+      //         });
+      //       }
+      //     } catch (error) {
+      //       console.error('Error sending email OTP:', error);
+      //     }
+      //     console.log('Post-save hook executed for user:', this);
+      //   },
+      // );
 
-  // if (query.paranoid == true) {
-  //     this.setQuery({ ...query, deletedAt: { $exists: false } });
-  // } else {
-  //     this.setQuery({ ...query });
-  // }
+      UserSchema.pre(['findOne', 'find'], function () {
+        console.log('Pre-findOne hook executed with filter:', this.getFilter());
+        const query = this.getQuery();
 
-  // Another way to check for the presence of the paranoid filter in the query is to directly check if the paranoid property exists in the query object. If it does, we can assume that the caller intends to apply soft deletion filtering, and we can modify the query accordingly. If it doesn't exist, we can proceed with the original query without adding any additional filters. Here's how you can implement this logic:
-  if (!query.getSoftDelete) {
-    this.setQuery({ ...query, deletedAt: { $exists: false } });
-  }
-});
-
-const UserModel = MongooseModule.forFeature([
-  { name: User.name, schema: UserSchema },
+        if (!query.getSoftDelete) {
+          this.setQuery({ ...query, deletedAt: { $exists: false } });
+        }
+      });
+      return UserSchema;
+    },
+    imports: [SecurityModule],
+    inject: [SecurityService],
+  },
 ]);
-
-// const UserModel = MongooseModule.forFeature([{ name: User.name, useFactory: () => UserSchema }]);
 
 export default UserModel;

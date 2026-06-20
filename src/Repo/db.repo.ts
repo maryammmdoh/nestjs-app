@@ -47,15 +47,15 @@ abstract class DBRepo<T> {
   }
 
   public async findById({
-    id,
+    _id,
     projection,
     options,
   }: {
-    id: string | Types.ObjectId;
+    _id: string | Types.ObjectId;
     projection?: ProjectionType<T> | null | undefined;
     options?: QueryOptions<T>;
   }) {
-    return await this.Model.findById(id, projection, options);
+    return await this.Model.findById(_id, projection, options);
   }
 
   public async updateOne({

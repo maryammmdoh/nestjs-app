@@ -9,6 +9,7 @@ import { User } from './model/User.model';
 import { AuthModule } from './Modules/Auth/auth.module';
 import { UserService } from './Modules/User/user.service';
 import { Connection } from 'mongoose';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -18,26 +19,38 @@ import { Connection } from 'mongoose';
       envFilePath: ['.env.dev', '.env.prod'],
       isGlobal: true,
     }),
-    // MongooseModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-    //   useFactory: (configService: ConfigService) => {
-    //     return { uri: configService.get<string>('DB_URL_LOCAL') };
+    JwtModule.register({
+      global: true,
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('DB_URL_LOCAL'),
+        onConnectionCreate: (connection: Connection) => {
+          connection.on('connected', () => console.log('DB connected'));
+          connection.on('open', () => console.log('DB connection open'));
+          connection.on('disconnected', () => console.log('DB disconnected'));
+          connection.on('reconnected', () => console.log('DB reconnected'));
+          connection.on('disconnecting', () => console.log('DB disconnecting'));
+
+          return connection;
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    // MongooseModule.forRoot(process.env.DB_URL_LOCAL as string, {
+    //   onConnectionCreate: (connection: Connection) => {
+    //     connection.on('connected', () => console.log('DB connected'));
+    //     connection.on('open', () => console.log('DB connection open'));
+    //     connection.on('disconnected', () => console.log('DB disconnected'));
+    //     connection.on('reconnected', () => console.log('DB reconnected'));
+    //     connection.on('disconnecting', () => console.log('DB disconnecting'));
+
+    //     return connection;
     //   },
     // }),
-    MongooseModule.forRoot(process.env.DB_URL_LOCAL as string, {
-      onConnectionCreate: (connection: Connection) => {
-        connection.on('connected', () => console.log('DB connected'));
-        connection.on('open', () => console.log('DB connection open'));
-        connection.on('disconnected', () => console.log('DB disconnected'));
-        connection.on('reconnected', () => console.log('DB reconnected'));
-        connection.on('disconnecting', () => console.log('DB disconnecting'));
-
-        return connection;
-      },
-    }),
   ],
-  controllers: [AppController, UserController],
-  providers: [AppService, User],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
